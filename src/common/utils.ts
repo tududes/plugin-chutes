@@ -1,74 +1,126 @@
-import { Content } from "@ai16z/eliza";
-import { SearchPluginConfig, SearchResult } from "./types.ts";
+/**
+ * Utility functions for Eliza plugins
+ */
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public statusCode?: number,
-  ) {
-    super(message);
-    this.name = "ApiError";
+/**
+ * Validate that an API key is provided
+ */
+export function validateApiKey(config: { apiKey: string }): void {
+  if (!config.apiKey) {
+    throw new Error("API key is required. Please set CHUTES_API_KEY environment variable.");
   }
 }
 
-export const validateApiKey = (config: SearchPluginConfig): void => {
-  if (!config.apiKey) {
-    throw new ApiError("API key is required");
+/**
+ * Validate a search query from user input
+ */
+export function validateSearchQuery(content: any): string {
+  if (!content || typeof content.text !== "string" || !content.text.trim()) {
+    throw new Error("Search query must be a non-empty string");
   }
-};
+  return content.text.trim();
+}
 
-export const validateSearchQuery = (content: Content): string => {
-  const query = typeof content === "string" ? content : content.text;
-  if (!query?.trim()) {
-    throw new ApiError("Search query is required");
-  }
-  return query.trim();
-};
-
-export const handleApiError = (
-  error: unknown,
-): { success: false; response: string } => {
-  if (error instanceof ApiError) {
-    return {
-      success: false,
-      response: `API Error: ${error.message}`,
-    };
-  }
+/**
+ * Handle errors from API calls
+ */
+export function handleApiError(error: unknown): { success: false; response: string } {
+  console.error("API Error:", error);
+  const errorMessage = error instanceof Error ? error.message : "Unknown error";
   return {
     success: false,
-    response: "An unexpected error occurred",
+    response: `Error: ${errorMessage}`,
   };
-};
+}
 
-export const formatSearchResults = (results: SearchResult[]): string => {
-  return results
-    .map((result, index) => {
-      return `${index + 1}. ${result.title}\n   ${result.url}\n   ${result.snippet}\n`;
-    })
-    .join("\n");
-};
+/**
+ * Format search results for display
+ */
+export function formatSearchResults(results: any[]): string {
+  if (!results || results.length === 0) {
+    return "No results found.";
+  }
+  
+  return results.map((result, index) => {
+    const title = result.title || `Result ${index + 1}`;
+    const url = result.url || "";
+    const snippet = result.snippet || result.content || "";
+    
+    return `
+### ${title}
 
-export const createRateLimiter = (maxRequests: number, timeWindow: number) => {
-  const requests: number[] = [];
+${snippet}
 
+${url ? `URL: ${url}` : ""}
+`;
+  }).join("\n---\n");
+}
+
+/**
+ * Create a rate limiter
+ */
+export function createRateLimiter(limit: number, timeWindow: number) {
+  let tokens = limit;
+  let lastRefill = Date.now();
+  
   return {
-    checkLimit: (): boolean => {
+    checkLimit: () => {
       const now = Date.now();
-      const windowStart = now - timeWindow;
-
-      // Remove old requests
-      while (requests.length > 0 && requests[0] < windowStart) {
-        requests.shift();
+      const timePassed = now - lastRefill;
+      
+      // Refill tokens based on time passed
+      if (timePassed > 0) {
+        const refillAmount = Math.floor(timePassed / timeWindow) * limit;
+        tokens = Math.min(limit, tokens + refillAmount);
+        lastRefill = now;
       }
-
-      // Check if we're at the limit
-      if (requests.length >= maxRequests) {
-        return false;
+      
+      if (tokens > 0) {
+        tokens--;
+        return true;
       }
-
-      // Add new request
-      requests.push(now);
-      return true;
+      
+      return false;
     },
   };
-};
+}
+
+/**
+ * Validate a chute ID
+ */
+export function validateChuteId(id: string): void {
+  if (!id || typeof id !== "string") {
+    throw new Error("Chute ID must be provided");
+  }
+  
+  // Check if it looks like a UUID
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(id)) {
+    // If not UUID, just check length
+    if (id.length < 3 || id.length > 64) {
+      throw new Error("Invalid chute ID format");
+    }
+  }
+}
+
+/**
+ * Validate a cord name
+ */
+export function validateCordName(name: string): void {
+  if (!name || typeof name !== "string") {
+    throw new Error("Cord name must be provided");
+  }
+  
+  if (name.length < 1 || name.length > 64) {
+    throw new Error("Cord name must be between 1 and 64 characters");
+  }
+}
+
+/**
+ * Validate parameters for cord execution
+ */
+export function validateParams(params: any): void {
+  if (params === null || typeof params !== "object") {
+    throw new Error("Parameters must be an object");
+  }
+}

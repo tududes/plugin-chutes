@@ -1,19 +1,29 @@
-# Eliza Plugin Starter Template
+# Chutes API Plugin for Eliza OS
 
-This repository provides a starter template for creating plugins for the [Eliza](https://github.com/ai16z/eliza) AI agent framework. It includes example implementations for search functionality using Tavily and Exa APIs.
+This repository contains a plugin for the [Eliza](https://github.com/ai16z/eliza) AI agent framework that integrates with the [Chutes.ai](https://chutes.ai) API. It allows Eliza OS to interact with Chutes.ai, a platform for deploying and managing GPU-accelerated applications and models.
+
+## Features
+
+The Chutes API plugin provides the following capabilities:
+
+1. **List Chutes**: View all your deployed chutes on Chutes.ai
+2. **Get Chute Details**: Get detailed information about a specific chute
+3. **Execute Cord**: Run functions (cords) on deployed chutes
+4. **List Images**: View available Docker images for building chutes
 
 ## Prerequisites
 
 - Node.js 23+
 - pnpm
-- TypeScript knowledge
+- A Chutes.ai account
+- A Chutes API key
 
 ## Getting Started
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/eliza-plugin-starter.git
-cd eliza-plugin-starter
+git clone https://github.com/yourusername/eliza-plugin-chutes.git
+cd eliza-plugin-chutes
 ```
 
 2. Install dependencies:
@@ -21,67 +31,60 @@ cd eliza-plugin-starter
 pnpm install
 ```
 
-3. Compile the TypeScript code:
+3. Add your Chutes API key to the `.env` file:
+```
+CHUTES_API_KEY=your_api_key_here
+```
+
+4. Compile the TypeScript code:
 ```bash
 pnpm tsc
 ```
 
-4. Run the project using the 'direct' client:
+5. Run the project using the 'direct' client:
 ```bash
 pnpm exec node --loader ts-node/esm ./src/scripts/load-with-plugin.ts --characters=./characters/eternalai.character.json
 ```
 
-**Note:** Only the 'direct' client will work within this repo since it uses mocked capabilities of the real client. Plugins developed here can be directly transposed into the main Eliza repository.
+## Plugin Usage
 
-## Project Overview
+Once the plugin is installed and configured, you can use it with Eliza OS to interact with the Chutes API. Here are some example commands:
 
-This starter template is designed to work with the 'direct' client within this repository due to the mocked capabilities of the real client. Plugins developed here are fully compatible with the main Eliza repository and can be directly transposed.
+- "List all my chutes"
+- "Show details for chute abc123"
+- "Run echo cord on chute abc123 with parameters foo=bar"
+- "List all available images"
 
 ## Project Structure
 
 ```
 src/
   ├── plugins/
+  │   ├── chutes/    # Chutes API plugin implementation
+  │   │   ├── index.ts       # Main plugin implementation
+  │   │   ├── types.ts       # Type definitions
+  │   │   ├── client.ts      # Chutes API client
+  │   │   └── README.md      # Plugin documentation
   │   ├── tavily/     # Tavily search plugin implementation
   │   └── exa/        # Exa search plugin implementation
   ├── common/         # Shared utilities and types
   └── index.ts        # Main entry point
 ```
 
-## Creating a Plugin
+## About Chutes.ai
 
-See the [Plugin Development Guide](docs/PLUGIN_GUIDE.md) for detailed instructions on creating your own plugin.
+Chutes.ai is a platform for deploying and managing GPU-accelerated applications and models. It provides:
 
-## Running the Project
+- On-demand access to GPU compute resources
+- Easy deployment of AI models and applications
+- A standardized API for interacting with deployed applications
+- Integration with vLLM for high-performance LLM inference
 
-You can run the project using the following command:
-
-```bash
-pnpm exec node --loader ts-node/esm ./src/scripts/load-with-plugin.ts --characters=./characters/eternalai.character.json
-```
-
-**Alternatively,** to simplify this process, use the predefined script:
-
-```bash
-pnpm mock-eliza --characters=./characters/eternalai.character.json
-```
-
-This script will prompt for a comma-separated list of character files to load.
-
-**Note:** The 'mock-eliza' script uses the 'direct' client because the project contains mocked capabilities of the real client.
-
-## Example Plugins
-
-This template includes two example plugin implementations:
-
-1. Tavily Search Plugin: Demonstrates web search capabilities using the Tavily API
-2. Exa Search Plugin: Shows how to integrate with the Exa search API
-
-Check the individual plugin directories for specific documentation and usage instructions.
+For more information about Chutes.ai, visit the [official website](https://chutes.ai).
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
