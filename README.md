@@ -40,7 +40,9 @@ A robust plugin for integrating with the Chutes API, featuring comprehensive err
 pnpm build
 ```
 
-## API Debugging
+## API Debugging and Common Issues
+
+### Using the Debug Script
 
 This plugin includes a dedicated debugging script that can help diagnose API connectivity issues:
 
@@ -51,8 +53,42 @@ node --loader ts-node/esm ./src/scripts/debugApi.ts
 The debugging script tests:
 - API URL validation
 - Authentication
-- Basic API operations
-- Response handling
+- Developer deposit requirements
+- Chutes and cords access
+- Direct API endpoint availability
+
+### Understanding API Access Requirements
+
+Based on our debugging and the Chutes documentation, here are important notes about API access:
+
+1. **API Key Permissions**:
+   - API keys can have different scopes: admin, images, specific chutes
+   - To create or modify images and chutes, you need a key with appropriate permissions
+
+2. **Developer Status Requirements**:
+   - To create images or chutes, you must have developer status
+   - Developer status requires a deposit of TAO cryptocurrency (approximately $250 USD)
+   - The plugin automatically checks developer status and provides guidance if required
+
+3. **Common 404 Errors**:
+   - "No matching chute found!" error on the `/chutes` endpoint usually means:
+     - No chutes have been deployed yet (normal case)
+     - API key lacks permission to view chutes
+     - Developer status is required
+
+### Handling Developer Requirements
+
+The plugin now includes methods to check developer status and requirements:
+
+```typescript
+// Check developer status
+const devStatus = await chutesPlugin.client.checkDeveloperStatus();
+
+if (!devStatus.isDeveloper) {
+  console.log(`Developer status required: ${devStatus.requirementMessage}`);
+  console.log(`Deposit amount: $${devStatus.depositInfo.usd} USD (${devStatus.depositInfo.tao_estimate} TAO)`);
+}
+```
 
 ## Usage
 
