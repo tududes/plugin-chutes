@@ -216,6 +216,11 @@ function isStringArray(plugins: unknown): plugins is string[] {
   return Array.isArray(plugins) && plugins.every((p) => typeof p === "string");
 }
 
+// Parse command line arguments
+const args = process.argv;
+const portFlag = args.find((arg) => arg.startsWith("--port="));
+const port = portFlag ? parseInt(portFlag.split("=")[1], 10) : 3000;
+
 async function main() {
   elizaLogger.info("Starting Eliza Agent...");
 
@@ -255,7 +260,7 @@ async function main() {
 
     const directClient = new DirectClient();
     directClient.registerAgent(runtime);
-    directClient.start(3000);
+    directClient.start(port);
   }
 
   elizaLogger.success("Eliza agents started successfully!");

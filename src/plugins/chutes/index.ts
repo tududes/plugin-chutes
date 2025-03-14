@@ -24,11 +24,14 @@ interface IAgentRuntime {
   [key: string]: any;
 }
 
+// Interface for message content
 interface Memory {
-  user: string;
-  content: any;
+  content: {
+    text: string;
+  };
 }
 
+// Interface for plugin state
 interface State {
   [key: string]: any;
 }
@@ -39,6 +42,10 @@ interface State {
 const DEFAULT_CONFIG: Partial<ChutesPluginConfig> = {
   baseUrl: "https://api.chutes.ai"
 };
+
+// Load environment variables
+import dotenv from 'dotenv';
+dotenv.config();
 
 /**
  * Implementation of the Chutes plugin for Eliza OS
@@ -394,5 +401,5 @@ ${cords.map(cord => `- ${cord.name}${cord.description ? `: ${cord.description}` 
 
 // Create and export a default instance of the plugin
 export default new ChutesApiPlugin({
-  apiKey: "",  // Set your API key here or use environment variables in production
+  apiKey: process.env.CHUTES_API_KEY || "",  // Use environment variable for API key
 });
