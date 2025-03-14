@@ -9,6 +9,7 @@
 import dotenv from 'dotenv';
 import { ChutesClient } from '../plugins/chutes/client.js';
 import { ChutesPluginConfig } from '../plugins/chutes/types.js';
+import { fetchWithRetry } from '../common/api-utils.js';
 
 // Configure environment variables
 dotenv.config();
@@ -125,6 +126,7 @@ class ApiTester {
   private client: ChutesClient;
   private config: ChutesPluginConfig;
   private baseUrl: string;
+  private apiKey: string;
   private defaultTimeout = 10000; // 10 seconds
   
   constructor() {
@@ -133,6 +135,7 @@ class ApiTester {
       throw new Error("CHUTES_API_KEY environment variable is required");
     }
     
+    this.apiKey = apiKey;
     this.baseUrl = process.env.CHUTES_API_BASE_URL || "https://api.chutes.ai";
     
     this.config = {
@@ -149,8 +152,9 @@ class ApiTester {
     try {
       await this.testUrlValidation();
       await this.testAuthentication();
-      await this.testListImages();
+      await this.testCheckDeveloperDeposit();
       await this.testListChutes();
+      await this.testDirectEndpoints();
       
       Logger.success("All tests completed");
     } catch (error) {
@@ -177,7 +181,7 @@ class ApiTester {
   }
   
   private async testAuthentication(): Promise<void> {
-    Logger.startTest("Authentication");
+    Logger.startTest("Authentication Check");
     
     try {
       const isAuthenticated = await TimeoutController.withTimeout(
@@ -198,21 +202,32 @@ class ApiTester {
     }
   }
   
-  private async testListImages(): Promise<void> {
-    Logger.startTest("List Images");
+  private async testCheckDeveloperDeposit(): Promise<void> {
+    Logger.startTest("Developer Deposit Check");
     
     try {
-      const images = await TimeoutController.withTimeout(
-        this.client.listImages(),
-        this.defaultTimeout,
-        "List images"
+      // Use direct fetch with retry to check developer deposit info
+      const response = await fetchWithRetry(
+        `${this.baseUrl}/developer_deposit`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+          }
+        }
       );
       
-      Logger.success(`Successfully retrieved ${images.length} images`);
-      Logger.debug("First few images:", images.slice(0, 2));
+      if (response.success) {
+        Logger.success("Successfully retrieved developer deposit information");
+        Logger.debug("Developer deposit details:", response.data);
+      } else {
+        Logger.warn("Failed to retrieve developer deposit info");
+        Logger.debug("Response error:", response.error);
+      }
     } catch (error) {
-      Logger.error("List images test failed", error);
-      throw error;
+      Logger.error("Developer deposit check failed", error);
+      // Don't throw here to continue other tests
     }
   }
   
@@ -227,10 +242,102 @@ class ApiTester {
       );
       
       Logger.success(`Successfully retrieved ${chutes.length} chutes`);
-      Logger.debug("First few chutes:", chutes.slice(0, 2));
+      
+      if (chutes.length > 0) {
+        Logger.debug("First few chutes:", chutes.slice(0, 2));
+        
+        // If we have chutes, test getting details for the first one
+        await this.testGetChuteDetails(chutes[0].id);
+        
+        // And test listing cords for it
+        await this.testListCords(chutes[0].id);
+      } else {
+        Logger.info("No chutes found to test details or cords");
+      }
     } catch (error) {
       Logger.error("List chutes test failed", error);
-      throw error;
+      // Continue with other tests
+    }
+  }
+  
+  private async testGetChuteDetails(chuteId: string): Promise<void> {
+    Logger.startTest(`Get Chute Details (${chuteId})`);
+    
+    try {
+      const chute = await TimeoutController.withTimeout(
+        this.client.getChute(chuteId),
+        this.defaultTimeout,
+        `Get chute details for ${chuteId}`
+      );
+      
+      Logger.success(`Successfully retrieved details for chute: ${chute.name}`);
+      Logger.debug("Chute details:", {
+        id: chute.id,
+        name: chute.name,
+        status: chute.status,
+        created_at: chute.created_at
+      });
+    } catch (error) {
+      Logger.error(`Get chute details test failed for ${chuteId}`, error);
+    }
+  }
+  
+  private async testListCords(chuteId: string): Promise<void> {
+    Logger.startTest(`List Cords for Chute (${chuteId})`);
+    
+    try {
+      const cords = await TimeoutController.withTimeout(
+        this.client.listCords(chuteId),
+        this.defaultTimeout,
+        `List cords for chute ${chuteId}`
+      );
+      
+      Logger.success(`Successfully retrieved ${cords.length} cords for chute`);
+      
+      if (cords.length > 0) {
+        Logger.debug("Available cords:", cords.map(c => c.name));
+      } else {
+        Logger.info("No cords found for this chute");
+      }
+    } catch (error) {
+      Logger.error(`List cords test failed for chute ${chuteId}`, error);
+    }
+  }
+  
+  private async testDirectEndpoints(): Promise<void> {
+    Logger.startTest("Testing Direct API Endpoints");
+    
+    // Test endpoints from documentation
+    const endpoints = [
+      { path: '/users/me', description: 'Get user information' },
+      { path: '/developer_deposit', description: 'Check developer deposit requirement' },
+      { path: '/chutes', description: 'List chutes' }
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        Logger.info(`Testing endpoint: ${endpoint.path} (${endpoint.description})`);
+        
+        const response = await fetchWithRetry(
+          `${this.baseUrl}${endpoint.path}`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+            }
+          }
+        );
+        
+        if (response.success) {
+          Logger.success(`Successfully accessed ${endpoint.path}`);
+          Logger.debug(`Response metrics:`, response.metrics);
+        } else {
+          Logger.warn(`Failed to access ${endpoint.path}: ${response.error?.message}`);
+        }
+      } catch (error) {
+        Logger.error(`Error testing ${endpoint.path}`, error);
+      }
     }
   }
 }

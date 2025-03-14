@@ -48,6 +48,30 @@ export interface ChutesPluginConfig {
 }
 
 /**
+ * User information from the Chutes API
+ */
+export interface ChutesUserInfo {
+  username?: string;
+  user?: string;  // Some responses use 'user' instead of 'username'
+  wallet_address?: string;
+  is_developer?: boolean;
+  coldkey_address?: string;
+  hotkey_address?: string;
+  developer_deposit_txhash?: string;
+  developer_deposit_amount?: string;
+  developer_deposit_date?: string;
+}
+
+/**
+ * Developer deposit information from the Chutes API
+ */
+export interface DeveloperDepositInfo {
+  usd: number;
+  tao_estimate: number;
+  message?: string;
+}
+
+/**
  * Represents an image in the Chutes API
  */
 export interface ChutesImage {
@@ -98,6 +122,15 @@ export interface ChutesCord {
 export interface ChutesApiClient {
   // Authentication
   checkAuth(): Promise<boolean>;
+  
+  // User Information
+  getUserInfo(): Promise<ChutesUserInfo>;
+  getDeveloperDepositInfo(): Promise<DeveloperDepositInfo>;
+  checkDeveloperStatus(): Promise<{
+    isDeveloper: boolean;
+    depositInfo?: DeveloperDepositInfo;
+    requirementMessage?: string;
+  }>;
   
   // Images
   listImages(): Promise<ChutesImage[]>;
