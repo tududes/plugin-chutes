@@ -1,90 +1,185 @@
-# Chutes API Plugin for Eliza OS
+# Chutes API Plugin with Enhanced Reliability
 
-This repository contains a plugin for the [Eliza](https://github.com/ai16z/eliza) AI agent framework that integrates with the [Chutes.ai](https://chutes.ai) API. It allows Eliza OS to interact with Chutes.ai, a platform for deploying and managing GPU-accelerated applications and models.
+A robust plugin for integrating with the Chutes API, featuring comprehensive error handling, timeout management, and fallback mechanisms.
 
 ## Features
 
-The Chutes API plugin provides the following capabilities:
-
-1. **List Chutes**: View all your deployed chutes on Chutes.ai
-2. **Get Chute Details**: Get detailed information about a specific chute
-3. **Execute Cord**: Run functions (cords) on deployed chutes
-4. **List Images**: View available Docker images for building chutes
-
-## Prerequisites
-
-- Node.js 23+
-- pnpm
-- A Chutes.ai account
-- A Chutes API key
+- **🚀 Reliable API Integration**: Implements timeout handling, retries with exponential backoff, and fallback endpoints
+- **🛠️ Comprehensive Error Handling**: Gracefully manages API errors with user-friendly messages
+- **📊 Detailed Logging**: Tracks API requests, responses, and performance metrics
+- **🧪 Debugging Utilities**: Includes dedicated debugging tools for API troubleshooting
+- **🔄 Multiple Endpoint Attempts**: Automatically tries alternative endpoints when the primary one fails
+- **⏱️ Configurable Timeouts**: Customizable timeout settings for different operations
 
 ## Getting Started
 
-1. Clone this repository:
-```bash
-git clone https://github.com/yourusername/eliza-plugin-chutes.git
-cd eliza-plugin-chutes
-```
+### Prerequisites
 
+- Node.js 14+
+- npm or pnpm
+
+### Installation
+
+1. Clone this repository
 2. Install dependencies:
-```bash
-pnpm install
-```
+   ```
+   pnpm install
+   ```
+3. Copy the example environment file and edit it:
+   ```
+   cp .env.example .env
+   ```
+4. Edit `.env` and add your Chutes API key:
+   ```
+   CHUTES_API_KEY=your_api_key_here
+   ```
 
-3. Add your Chutes API key to the `.env` file:
-```
-CHUTES_API_KEY=your_api_key_here
-```
-
-4. Compile the TypeScript code:
-```bash
-pnpm tsc
-```
-
-5. Run the project using the 'direct' client:
-```bash
-pnpm exec node --loader ts-node/esm ./src/scripts/load-with-plugin.ts --characters=./characters/eternalai.character.json
-```
-
-## Plugin Usage
-
-Once the plugin is installed and configured, you can use it with Eliza OS to interact with the Chutes API. Here are some example commands:
-
-- "List all my chutes"
-- "Show details for chute abc123"
-- "Run echo cord on chute abc123 with parameters foo=bar"
-- "List all available images"
-
-## Project Structure
+### Building
 
 ```
-src/
-  ├── plugins/
-  │   ├── chutes/    # Chutes API plugin implementation
-  │   │   ├── index.ts       # Main plugin implementation
-  │   │   ├── types.ts       # Type definitions
-  │   │   ├── client.ts      # Chutes API client
-  │   │   └── README.md      # Plugin documentation
-  │   ├── tavily/     # Tavily search plugin implementation
-  │   └── exa/        # Exa search plugin implementation
-  ├── common/         # Shared utilities and types
-  └── index.ts        # Main entry point
+pnpm build
 ```
 
-## About Chutes.ai
+## API Debugging
 
-Chutes.ai is a platform for deploying and managing GPU-accelerated applications and models. It provides:
+This plugin includes a dedicated debugging script that can help diagnose API connectivity issues:
 
-- On-demand access to GPU compute resources
-- Easy deployment of AI models and applications
-- A standardized API for interacting with deployed applications
-- Integration with vLLM for high-performance LLM inference
+```
+node --loader ts-node/esm ./src/scripts/debugApi.ts
+```
 
-For more information about Chutes.ai, visit the [official website](https://chutes.ai).
+The debugging script tests:
+- API URL validation
+- Authentication
+- Basic API operations
+- Response handling
 
-## Contributing
+## Usage
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Basic Usage
+
+```typescript
+import { ChutesApiPlugin } from './plugins/chutes';
+
+// Create a new instance of the plugin
+const chutesPlugin = new ChutesApiPlugin({
+  apiKey: 'your_api_key_here',
+  // Optional configuration
+  baseUrl: 'https://api.chutes.ai',
+  timeoutMs: 30000,
+  retries: 3
+});
+
+// Use the plugin
+const chutes = await chutesPlugin.client.listChutes();
+console.log(chutes);
+```
+
+### Advanced Configuration
+
+```typescript
+const config = {
+  apiKey: 'your_api_key_here',
+  baseUrl: 'https://api.chutes.ai',
+  timeoutMs: 30000, // 30 seconds timeout
+  retries: 3, // Retry up to 3 times
+  fallbackEndpoints: [
+    'https://api-backup.chutes.ai', 
+    'https://api-fallback.chutes.ai'
+  ]
+};
+
+const chutesPlugin = new ChutesApiPlugin(config);
+```
+
+## API Integration Improvements
+
+This plugin implements several improvements for reliable API integration:
+
+### 1. Timeout Handling
+
+All API requests use the `withTimeout` utility to prevent indefinitely hanging requests:
+
+```typescript
+const result = await withTimeout(
+  promise,
+  timeoutMs,
+  operationName
+);
+```
+
+### 2. Retry Mechanism
+
+Failed API requests are automatically retried with exponential backoff:
+
+```typescript
+const result = await withRetry(
+  (retry, signal) => apiFunction(params, signal),
+  { retries: 3, timeout: 10000 }
+);
+```
+
+### 3. Fallback Endpoints
+
+If the primary API endpoint fails, the plugin automatically tries alternative endpoints:
+
+```typescript
+const fallbackEndpoints = [
+  'https://api-backup.chutes.ai',
+  'https://api-fallback.chutes.ai'
+];
+```
+
+### 4. Response Validation
+
+Responses are validated to ensure they contain the expected data:
+
+```typescript
+const validatedData = validateResponseData(
+  data,
+  ['id', 'name', 'status'],
+  { defaultValue: 'fallback' }
+);
+```
+
+### 5. Enhanced Error Handling
+
+API errors are processed into user-friendly messages:
+
+```typescript
+try {
+  // API call
+} catch (error) {
+  return formatErrorResponse(error);
+}
+```
+
+## Error Handling
+
+The plugin implements a comprehensive error handling strategy:
+
+1. **Network Errors**: Connection issues are clearly identified
+2. **Timeout Errors**: Requests that take too long are properly terminated
+3. **API Errors**: Invalid responses from the API are handled gracefully
+4. **User-Friendly Messages**: Technical errors are translated into understandable messages
+5. **Detailed Logging**: All errors are logged with relevant context
+
+## Development
+
+### Running Tests
+
+```
+pnpm test
+```
+
+### Debugging
+
+The plugin includes extensive logging throughout the API request lifecycle. To view detailed logs:
+
+```typescript
+// Enable verbose logging
+process.env.DEBUG = 'chutes:*';
+```
 
 ## License
 
