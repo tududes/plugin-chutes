@@ -1,43 +1,136 @@
-# Chutes API Plugin with Enhanced Reliability
+# Chutes Plugin for Eliza OS
 
-A robust plugin for integrating with the Chutes API, featuring comprehensive error handling, timeout management, and fallback mechanisms.
+A powerful Eliza OS plugin that enables seamless integration with the Chutes AI platform, allowing you to create, manage, and interact with AI-powered chutes directly from Eliza OS.
+
+## What is Chutes?
+
+Chutes is an AI middleware platform that helps developers build and deploy AI applications. The platform provides:
+
+- Access to state-of-the-art AI models
+- Infrastructure for deploying and scaling AI applications  
+- Tools for monitoring and managing AI workflows
+- Developer-friendly APIs for integration
+
+This plugin brings the power of Chutes directly to Eliza OS.
 
 ## Features
 
-- **🚀 Reliable API Integration**: Implements timeout handling, retries with exponential backoff, and fallback endpoints
+- **🔌 Seamless Eliza OS Integration**: Easily access Chutes functionality within the Eliza OS environment
+- **📋 Chute Management**: Create, list, and manage your AI chutes
+- **💬 Cord Messaging**: Send and receive messages through AI-powered cords
+- **🚀 Reliable API Integration**: Implements timeout handling, retries, and fallback mechanisms
 - **🛠️ Comprehensive Error Handling**: Gracefully manages API errors with user-friendly messages
-- **📊 Detailed Logging**: Tracks API requests, responses, and performance metrics
-- **🧪 Debugging Utilities**: Includes dedicated debugging tools for API troubleshooting
-- **🔄 Multiple Endpoint Attempts**: Automatically tries alternative endpoints when the primary one fails
-- **⏱️ Configurable Timeouts**: Customizable timeout settings for different operations
+- **🧪 Debugging Utilities**: Includes dedicated tools for API troubleshooting
 
-## Getting Started
+## Installation
 
 ### Prerequisites
 
+- Eliza OS environment
 - Node.js 14+
 - npm or pnpm
+- Chutes API key (get one at [chutes.ai](https://chutes.ai))
 
-### Installation
+### Setup
 
-1. Clone this repository
-2. Install dependencies:
+1. Install the plugin in your Eliza OS environment:
+   ```bash
+   npm install @eliza-os/plugin-chutes
    ```
-   pnpm install
+
+2. Configure the plugin with your Chutes API key:
+   ```typescript
+   import { ChutesPlugin } from '@eliza-os/plugin-chutes';
+
+   // Register the plugin
+   elizaOS.registerPlugin(new ChutesPlugin({
+     apiKey: 'your_chutes_api_key_here'
+   }));
    ```
-3. Copy the example environment file and edit it:
-   ```
-   cp .env.example .env
-   ```
-4. Edit `.env` and add your Chutes API key:
+
+3. Alternatively, create a `.env` file with your API key:
    ```
    CHUTES_API_KEY=your_api_key_here
    ```
 
-### Building
+## Usage Examples
 
+### Basic Usage
+
+```typescript
+// Access the plugin through Eliza OS
+const chutesPlugin = elizaOS.getPlugin('chutes');
+
+// List all available chutes
+const chutes = await chutesPlugin.client.listChutes();
+console.log('Available chutes:', chutes);
+
+// Get information about a specific chute
+const chuteInfo = await chutesPlugin.client.getChuteInfo('chute-id-here');
+console.log('Chute details:', chuteInfo);
 ```
-pnpm build
+
+### Creating a New Chute
+
+```typescript
+// Define your chute configuration
+const chuteConfig = {
+  name: 'My First Chute',
+  description: 'A demo chute for testing purposes',
+  modelName: 'gpt-4',
+  prompts: {
+    system: 'You are a helpful assistant specialized in answering questions about AI.',
+    user: '{{message}}'
+  }
+};
+
+// Create the chute
+const newChute = await chutesPlugin.client.createChute(chuteConfig);
+console.log('New chute created:', newChute);
+```
+
+### Sending Messages to a Cord
+
+```typescript
+// Send a message to a specific cord
+const response = await chutesPlugin.client.sendMessageToCord(
+  'cord-id-here',
+  'What are the main challenges in AI development?'
+);
+
+console.log('Cord response:', response.message);
+```
+
+### Working with Developer Status
+
+```typescript
+// Check if you have developer status
+const devStatus = await chutesPlugin.client.checkDeveloperStatus();
+
+if (devStatus.isDeveloper) {
+  console.log('You have developer status!');
+} else {
+  console.log(`Developer status required: ${devStatus.requirementMessage}`);
+  console.log(`Deposit amount: $${devStatus.depositInfo.usd} USD (${devStatus.depositInfo.tao_estimate} TAO)`);
+}
+```
+
+## Advanced Configuration
+
+```typescript
+const config = {
+  apiKey: 'your_api_key_here',
+  baseUrl: 'https://api.chutes.ai',
+  timeoutMs: 30000, // 30 seconds timeout
+  retries: 3, // Retry up to 3 times
+  fallbackEndpoints: [
+    'https://api-backup.chutes.ai', 
+    'https://api-fallback.chutes.ai'
+  ]
+};
+
+// Register with advanced configuration
+elizaOS.registerPlugin(new ChutesPlugin(config));
 ```
 
 ## API Debugging and Common Issues
@@ -76,120 +169,6 @@ Based on our debugging and the Chutes documentation, here are important notes ab
      - API key lacks permission to view chutes
      - Developer status is required
 
-### Handling Developer Requirements
-
-The plugin now includes methods to check developer status and requirements:
-
-```typescript
-// Check developer status
-const devStatus = await chutesPlugin.client.checkDeveloperStatus();
-
-if (!devStatus.isDeveloper) {
-  console.log(`Developer status required: ${devStatus.requirementMessage}`);
-  console.log(`Deposit amount: $${devStatus.depositInfo.usd} USD (${devStatus.depositInfo.tao_estimate} TAO)`);
-}
-```
-
-## Usage
-
-### Basic Usage
-
-```typescript
-import { ChutesApiPlugin } from './plugins/chutes';
-
-// Create a new instance of the plugin
-const chutesPlugin = new ChutesApiPlugin({
-  apiKey: 'your_api_key_here',
-  // Optional configuration
-  baseUrl: 'https://api.chutes.ai',
-  timeoutMs: 30000,
-  retries: 3
-});
-
-// Use the plugin
-const chutes = await chutesPlugin.client.listChutes();
-console.log(chutes);
-```
-
-### Advanced Configuration
-
-```typescript
-const config = {
-  apiKey: 'your_api_key_here',
-  baseUrl: 'https://api.chutes.ai',
-  timeoutMs: 30000, // 30 seconds timeout
-  retries: 3, // Retry up to 3 times
-  fallbackEndpoints: [
-    'https://api-backup.chutes.ai', 
-    'https://api-fallback.chutes.ai'
-  ]
-};
-
-const chutesPlugin = new ChutesApiPlugin(config);
-```
-
-## API Integration Improvements
-
-This plugin implements several improvements for reliable API integration:
-
-### 1. Timeout Handling
-
-All API requests use the `withTimeout` utility to prevent indefinitely hanging requests:
-
-```typescript
-const result = await withTimeout(
-  promise,
-  timeoutMs,
-  operationName
-);
-```
-
-### 2. Retry Mechanism
-
-Failed API requests are automatically retried with exponential backoff:
-
-```typescript
-const result = await withRetry(
-  (retry, signal) => apiFunction(params, signal),
-  { retries: 3, timeout: 10000 }
-);
-```
-
-### 3. Fallback Endpoints
-
-If the primary API endpoint fails, the plugin automatically tries alternative endpoints:
-
-```typescript
-const fallbackEndpoints = [
-  'https://api-backup.chutes.ai',
-  'https://api-fallback.chutes.ai'
-];
-```
-
-### 4. Response Validation
-
-Responses are validated to ensure they contain the expected data:
-
-```typescript
-const validatedData = validateResponseData(
-  data,
-  ['id', 'name', 'status'],
-  { defaultValue: 'fallback' }
-);
-```
-
-### 5. Enhanced Error Handling
-
-API errors are processed into user-friendly messages:
-
-```typescript
-try {
-  // API call
-} catch (error) {
-  return formatErrorResponse(error);
-}
-```
-
 ## Error Handling
 
 The plugin implements a comprehensive error handling strategy:
@@ -201,6 +180,25 @@ The plugin implements a comprehensive error handling strategy:
 5. **Detailed Logging**: All errors are logged with relevant context
 
 ## Development
+
+### Building from Source
+
+If you want to build the plugin from source:
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/eliza-os/plugin-chutes.git
+   ```
+
+2. Install dependencies:
+   ```
+   pnpm install
+   ```
+
+3. Build the plugin:
+   ```
+   pnpm build
+   ```
 
 ### Running Tests
 
